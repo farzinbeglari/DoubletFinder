@@ -1,0 +1,43 @@
+# Doublet Detection in Single-Cell RNA Sequencing Data using DoubletFinder R Package (GSM8556537)
+
+library(Seurat)
+library(DoubletFinder)
+
+# scRNAseq-Import-Seurat-QC
+
+Data <- ReadMtx(mtx = 'matrix.mtx.gz',
+                features = 'features.tsv.gz',
+                cells = 'barcodes.tsv.gz')
+
+Data <- CreateSeuratObject(Data, project = 'High grade endometrioid endometrial cancer')
+View(Data@meta.data)
+Data <- NormalizeData(Data)
+Data <- FindVariableFeatures(Data)
+Data <- ScaleData(Data)
+Data <- RunPCA(Data)
+ElbowPlot(Data)
+Data <- FindNeighbors(Data, dims = 1:20)
+Data <- FindClusters(Data)
+Data <- RunUMAP(Data, dims = 1:20)
+
+# Visualization of Cellular Heterogeneity Using DimPlot
+a1 <- DimPlot(Data, reduction = 'umap', group.by = 'orig.ident')
+a2 <- DimPlot(Data, reduction = 'umap', group.by = 'seurat_clusters')
+a1|a2
+
+# Finding the Optimal pK for Doublet Detection
+sweep <- paramSweep(Data, PCs = 1:20, sct = F)
+sweep.stats <- summarizeSweep(sweep, GT = F)
+bcmvn <- find.pK(sweep.stats)
+best.pk <- as.numeric(as.character(bcmvn$pK[which.max(bcmvn$BCmetric)]))
+
+# Expected Doublet Rate (7.5%)
+nExp <- round(0.075*ncol(Data))
+
+# Identifying and Visualizing Doublets
+Data.doublets <- doubletFinder(Data, PCs = 1:20, pK = best.pk, pN = 0.25, nExp = nExp)
+View(Data.doublets@meta.data)
+DimPlot(Data.doublets, reduction = 'umap', group.by = 'DF.classifications_0.25_0.02_327')
+
+# Doublet Removal
+Normalized.Data <- subset(Data.doublets, subset = DF.classifications_0.25_0.02_327 == 'Singlet')
