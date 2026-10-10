@@ -41,3 +41,6 @@ DimPlot(Data.doublets, reduction = 'umap', group.by = 'DF.classifications_0.25_0
 
 # Doublet Removal
 Normalized.Data <- subset(Data.doublets, subset = DF.classifications_0.25_0.02_327 == 'Singlet')
+
+# Reference
+McGinnis CS, Murrow LM, Gartner ZJ. DoubletFinder: doublet detection in single-cell RNA sequencing data using artificial nearest neighbors. Cell systems. 2019 Apr 24;8(4):329-37.
